@@ -229,6 +229,10 @@ minimumReleaseAgeExclude:
   - agent-device@0.21.32
 
 overrides:
+  # Keep root workspace resolution on patched versions for current critical advisories.
+  proxy-addr: 2.0.8
+  seroval: 1.6.2
+  shell-quote: 1.11.0
   # Pin every patched package, including transitive dependencies, so lockfile-free
   # release installs cannot drift past the patch. Update these with patchedDependencies.
   react-native-image-viewing: 0.2.2
