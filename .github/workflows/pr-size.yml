@@ -137,7 +137,8 @@ jobs:
           PR_SIZE_LABELS_JSON: ${{ needs.prepare-config.outputs.labels_json }}
         with:
           script: |
-            const { execFileSync } = require("node:child_process");
+            const { execFileSync, spawn } = require("node:child_process");
+            const { createInterface } = require("node:readline");
 
             const issueNumber = context.payload.pull_request.number;
             const baseSha = context.payload.pull_request.base.sha;
@@ -229,18 +230,32 @@ jobs:
               `${baseSha}...${resolvedHeadSha}`,
             ];
 
-            const totalChangedLines = sumNumstat(
-              execFileSync(
-                "git",
-                diffArgs,
-                { encoding: "utf8" },
-              ),
-            );
-            const nonTestChangedLines = sumNumstat(
-              execFileSync("git", [...diffArgs, "--", ".", ...testExcludePathspecs], {
-                encoding: "utf8",
-              }),
-            );
+            // A large sync can exceed execFileSync's stdout buffer. Sum every line
+            // as Git emits it, preserving the existing whitespace and test filters.
+            const countChangedLines = async (args) => {
+              const child = spawn("git", args, { stdio: ["ignore", "pipe", "inherit"] });
+              const completed = new Promise((resolve, reject) => {
+                child.once("error", reject);
+                child.once("close", (code, signal) => {
+                  if (code === 0) resolve();
+                  else reject(new Error(`git diff failed: ${signal ?? code}`));
+                });
+              });
+              const counted = (async () => {
+                let total = 0;
+                for await (const line of createInterface({ input: child.stdout, crlfDelay: Infinity })) {
+                  total += sumNumstat(line);
+                }
+                return total;
+              })();
+              const [total] = await Promise.all([counted, completed]);
+              return total;
+            };
+
+            const totalChangedLines = await countChangedLines(diffArgs);
+            const nonTestChangedLines = await countChangedLines([
+              ...diffArgs, "--", ".", ...testExcludePathspecs,
+            ]);
             const testChangedLines = Math.max(0, totalChangedLines - nonTestChangedLines);
 
             const changedLines = nonTestChangedLines === 0 ? testChangedLines : nonTestChangedLines;
