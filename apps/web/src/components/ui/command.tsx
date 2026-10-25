@@ -1,5 +1,3 @@
-"use client";
-
 import { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
 import { SearchIcon } from "lucide-react";
 import type * as React from "react";
@@ -12,6 +10,8 @@ import {
   AutocompleteInput,
   AutocompleteItem,
   AutocompleteList,
+  AutocompleteListHeading,
+  AutocompleteListVirtualized,
 } from "~/components/ui/autocomplete";
 import { DIALOG_BACKDROP_CLASS, DIALOG_POPUP_CLASS } from "~/components/ui/dialog-styles";
 import { Button } from "~/components/ui/button";
@@ -123,6 +123,28 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Autoco
   );
 }
 
+function CommandListVirtualized({
+  className,
+  ...props
+}: React.ComponentProps<typeof AutocompleteListVirtualized>) {
+  return (
+    <AutocompleteListVirtualized
+      className={cn("flex max-h-[inherit] min-h-0 flex-col", className)}
+      data-slot="command-list"
+      {...props}
+    />
+  );
+}
+
+function CommandListHeading({
+  className,
+  ...props
+}: React.ComponentProps<typeof AutocompleteListHeading>) {
+  return (
+    <AutocompleteListHeading className={className} data-slot="command-group-label" {...props} />
+  );
+}
+
 function CommandPanel({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -152,9 +174,7 @@ function CommandCollection({ ...props }: React.ComponentProps<typeof Autocomplet
   return <AutocompleteCollection data-slot="command-collection" {...props} />;
 }
 
-// Pass `active` when the palette tracks the highlighted row itself; the
-// primitive's hover and keyboard highlight are then ignored so the two never
-// disagree, and the row shows the active surface instead.
+// Pass active to override primitive hover/keyboard highlights when the palette tracks its own row.
 function CommandItem({
   className,
   active,
@@ -229,6 +249,8 @@ export {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandListHeading,
+  CommandListVirtualized,
   CommandPanel,
   CommandShortcut,
 };
